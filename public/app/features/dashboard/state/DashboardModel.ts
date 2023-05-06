@@ -758,6 +758,7 @@ export class DashboardModel implements TimeModel {
       const rowPanels = rowCopy.panels || [];
       let panelBelowIndex;
 
+      const mapping = new Map();
       if (panel.collapsed) {
         // For collapsed row just copy its panels and set scoped vars and proper IDs
         for (const rowPanel of rowPanels) {
@@ -777,6 +778,8 @@ export class DashboardModel implements TimeModel {
           if (optionIndex > 0) {
             const cloneRowPanel = new PanelModel(rowPanel);
             this.updateRepeatedPanelIds(cloneRowPanel, true);
+            this.cacheRepeatMapping(cloneRowPanel, mapping)
+            this.updatePanelTargetIds(cloneRowPanel, mapping);
             // For exposed row additionally set proper Y grid position and add it to dashboard panels
             cloneRowPanel.gridPos.y += rowHeight * optionIndex;
             this.panels.splice(insertPos + i, 0, cloneRowPanel);
@@ -795,6 +798,23 @@ export class DashboardModel implements TimeModel {
         }
       }
     }
+  }
+
+  private cacheRepeatMapping(cloneRowPanel: PanelModel, mapping: any) {
+    if (cloneRowPanel.repeatPanelId) {
+      mapping.set(cloneRowPanel.repeatPanelId, cloneRowPanel.id);
+    }
+  }
+
+  private updatePanelTargetIds(cloneRowPanel: PanelModel, mapping: any) {
+    cloneRowPanel.targets.forEach((target: any, i: number) => {
+      if ('panelId' in target) {
+        const id = target['panelId'];
+        if (mapping.has(id)) {
+          target['panelId'] = mapping.get(id);
+        }
+      }
+    });
   }
 
   updateRepeatedPanelIds(panel: PanelModel, repeatedByRow?: boolean) {
